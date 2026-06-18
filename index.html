@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>แบบฟอร์มเก็บข้อมูลนักเรียน</title>
+
+<!-- โหลดไลบรารี SweetAlert2 สำหรับแสดง popup สถานะ (กำลังบันทึก / บันทึกสำเร็จ / ผิดพลาด) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert2/11.10.1/sweetalert2.all.min.js"></script>
+
+<style>
+  :root {
+    --navy: #1f3a5f;
+    --navy-dark: #142a47;
+    --gold: #c9a14a;
+    --bg: #f4f6f9;
+    --card-bg: #ffffff;
+    --text: #2b2f36;
+    --muted: #6b7280;
+    --border: #dbe2ea;
+    --error: #d64545;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: "Sarabun", "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  @font-face {
+    font-family: "Sarabun";
+    src: local("Sarabun");
+  }
+
+  .card {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 520px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(20, 42, 71, 0.08);
+    overflow: hidden;
+  }
+
+  .card-header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-dark) 100%);
+    color: #fff;
+    padding: 28px 32px;
+    position: relative;
+  }
+
+  .card-header::after {
+    content: "";
+    position: absolute;
+    left: 32px;
+    bottom: 0;
+    width: 48px;
+    height: 4px;
+    background: var(--gold);
+    border-radius: 2px 2px 0 0;
+  }
+
+  .card-header h1 {
+    margin: 0 0 4px;
+    font-size: 1.35rem;
+    font-weight: 700;
+  }
+
+  .card-header p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: rgba(255,255,255,0.75);
+  }
+
+  form {
+    padding: 28px 32px 32px;
+  }
+
+  .row {
+    display: grid;
+    gap: 16px;
+    margin-bottom: 18px;
+  }
+
+  .row.cols-3 { grid-template-columns: 1fr 1.4fr 1.4fr; }
+  .row.cols-3-b { grid-template-columns: 1fr 1fr 1fr; }
+  .row.cols-2 { grid-template-columns: 1fr 1fr; }
+
+  @media (max-width: 480px) {
+    .row.cols-3, .row.cols-3-b, .row.cols-2 {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .field label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--navy-dark);
+    margin-bottom: 6px;
+  }
+
+  .field input, .field select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    color: var(--text);
+    background: #fff;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .field input:focus, .field select:focus {
+    outline: none;
+    border-color: var(--navy);
+    box-shadow: 0 0 0 3px rgba(31, 58, 95, 0.12);
+  }
+
+  .field small.unit {
+    display: block;
+    margin-top: 4px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .field.error input, .field.error select {
+    border-color: var(--error);
+  }
+
+  .field .error-msg {
+    display: none;
+    color: var(--error);
+    font-size: 0.75rem;
+    margin-top: 4px;
+  }
+
+  .field.error .error-msg { display: block; }
+
+  button[type="submit"] {
+    width: 100%;
+    padding: 14px;
+    margin-top: 8px;
+    background: var(--navy);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 1rem;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.05s;
+  }
+
+  button[type="submit"]:hover { background: var(--navy-dark); }
+  button[type="submit"]:active { transform: scale(0.99); }
+
+  button[type="submit"]:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-header">
+    <h1>แบบฟอร์มเก็บข้อมูลนักเรียน</h1>
+    <p>กรอกข้อมูลให้ครบถ้วนและถูกต้อง ระบบจะบันทึกเข้า Google Sheet โดยตรง</p>
+  </div>
+
+  <form id="studentForm" novalidate>
+
+    <!-- แถวที่ 1: คำนำหน้าชื่อ / ชื่อ / นามสกุล -->
+    <div class="row cols-3">
+      <div class="field" data-field="prefix">
+        <label for="prefix">คำนำหน้าชื่อ</label>
+        <select id="prefix" name="prefix">
+          <option value="เด็กชาย">เด็กชาย</option>
+          <option value="เด็กหญิง">เด็กหญิง</option>
+          <option value="นาย">นาย</option>
+          <option value="นางสาว">นางสาว</option>
+        </select>
+        <div class="error-msg">กรุณาเลือกคำนำหน้าชื่อ</div>
+      </div>
+
+      <div class="field" data-field="firstName">
+        <label for="firstName">ชื่อ</label>
+        <input type="text" id="firstName" name="firstName" placeholder="ชื่อ">
+        <div class="error-msg">กรุณากรอกชื่อ</div>
+      </div>
+
+      <div class="field" data-field="lastName">
+        <label for="lastName">นามสกุล</label>
+        <input type="text" id="lastName" name="lastName" placeholder="นามสกุล">
+        <div class="error-msg">กรุณากรอกนามสกุล</div>
+      </div>
+    </div>
+
+    <!-- แถวที่ 2: ชั้นมัธยมศึกษาปีที่ / ห้อง / เลขที่ -->
+    <div class="row cols-3-b">
+      <div class="field" data-field="grade">
+        <label for="grade">ชั้นมัธยมศึกษาปีที่</label>
+        <select id="grade" name="grade">
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+        </select>
+        <div class="error-msg">กรุณาเลือกชั้น</div>
+      </div>
+
+      <div class="field" data-field="room">
+        <label for="room">ห้อง</label>
+        <input type="number" id="room" name="room" min="1" placeholder="เช่น 3">
+        <div class="error-msg">กรุณากรอกห้อง</div>
+      </div>
+
+      <div class="field" data-field="number">
+        <label for="number">เลขที่</label>
+        <input type="number" id="number" name="number" min="1" placeholder="เช่น 12">
+        <div class="error-msg">กรุณากรอกเลขที่</div>
+      </div>
+    </div>
+
+    <!-- แถวที่ 3: น้ำหนัก / ส่วนสูง -->
+    <div class="row cols-2">
+      <div class="field" data-field="weight">
+        <label for="weight">น้ำหนัก</label>
+        <input type="number" id="weight" name="weight" min="1" step="0.1" placeholder="เช่น 45.5">
+        <small class="unit">หน่วย: กิโลกรัม (ก.ก.)</small>
+        <div class="error-msg">กรุณากรอกน้ำหนัก</div>
+      </div>
+
+      <div class="field" data-field="height">
+        <label for="height">ส่วนสูง</label>
+        <input type="number" id="height" name="height" min="1" step="0.1" placeholder="เช่น 160">
+        <small class="unit">หน่วย: เซนติเมตร (ซ.ม.)</small>
+        <div class="error-msg">กรุณากรอกส่วนสูง</div>
+      </div>
+    </div>
+
+    <button type="submit" id="submitBtn">บันทึกข้อมูล</button>
+  </form>
+</div>
+
+<script>
+// ===================== ตั้งค่า URL ของ Apps Script Web App =====================
+// URL นี้คือปลายทางที่ฟอร์มจะส่งข้อมูลไปบันทึกลง Google Sheet
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwEqpzxPbc0Iltzwf28tS4joX0Z3UTsZcfQjt9NH83k2ChMIlm9wRj0265lo1M9xies7g/exec";
+
+const form = document.getElementById("studentForm");
+const submitBtn = document.getElementById("submitBtn");
+
+/**
+ * ฟังก์ชันสำหรับส่งข้อมูลแบบ JSONP
+ * เหตุผลที่ใช้ JSONP แทน fetch/XHR ปกติ คือ Google Apps Script Web App
+ * ไม่ได้ตั้งค่า CORS header ให้รับ request แบบ fetch จากโดเมนอื่นโดยตรง
+ * การใช้ JSONP คือการสร้าง <script> tag ที่มี src ชี้ไปยัง URL ปลายทาง
+ * พร้อมพารามิเตอร์ และฝั่งปลายทางจะ "ห่อ" ข้อมูลที่ตอบกลับด้วยชื่อฟังก์ชัน (callback)
+ * ซึ่งวิธีนี้ไม่ติดปัญหา Cross-Origin เพราะเบราว์เซอร์อนุญาตให้โหลด <script> ข้ามโดเมนได้เสมอ
+ */
+function jsonpRequest(url, params) {
+  return new Promise((resolve, reject) => {
+    // สร้างชื่อฟังก์ชัน callback ที่ไม่ซ้ำกันในแต่ละครั้งที่เรียก
+    // (กันปัญหาเรียกซ้อนกันหลายครั้งในหน้าเดียว)
+    const callbackName = "jsonpCallback_" + Date.now() + "_" + Math.floor(Math.random() * 100000);
+
+    // เก็บ timeout ไว้เคลียร์ทิ้งถ้าโหลดเสร็จก่อนเวลา
+    let timeoutId;
+
+    // ฟังก์ชันเคลียร์ <script> tag และฟังก์ชัน callback ออกจากหน้าเว็บ
+    // เพื่อไม่ให้ค้างอยู่ใน memory หลังใช้งานเสร็จ
+    function cleanup() {
+      delete window[callbackName];
+      if (scriptTag && scriptTag.parentNode) {
+        scriptTag.parentNode.removeChild(scriptTag);
+      }
+      clearTimeout(timeoutId);
+    }
+
+    // ผูกฟังก์ชัน callback เข้ากับ window object ชั่วคราว
+    // เมื่อ Apps Script ตอบกลับมาเป็น "jsonpCallback_xxx({...data...})"
+    // โค้ดที่ Apps Script ส่งมาจะถูกรันเป็น JavaScript ทันที และเรียกฟังก์ชันนี้
+    window[callbackName] = function (data) {
+      cleanup();
+      resolve(data);
+    };
+
+    // แปลง object params ให้เป็น query string เช่น prefix=นาย&firstName=สมชาย...
+    const queryString = Object.keys(params)
+      .map(key => encodeURIComponent(key) + "=" + encodeURIComponent(params[key]))
+      .join("&");
+
+    // สร้าง <script> tag ที่ src ชี้ไปยัง Apps Script
+    // พร้อมแนบชื่อ callback ไปด้วย เพื่อให้ Apps Script รู้ว่าต้องห่อผลลัพธ์ด้วยชื่อนี้
+    const scriptTag = document.createElement("script");
+    scriptTag.src = url + "?" + queryString + "&callback=" + callbackName;
+
+    // ถ้าโหลดสคริปต์ไม่สำเร็จ (เช่น เน็ตหลุด, URL ผิด) ให้ reject
+    scriptTag.onerror = function () {
+      cleanup();
+      reject(new Error("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้"));
+    };
+
+    // ตั้งเวลา timeout ไว้ 15 วินาที กันกรณีปลายทางไม่ตอบกลับเลย
+    timeoutId = setTimeout(function () {
+      cleanup();
+      reject(new Error("หมดเวลาการเชื่อมต่อ (timeout)"));
+    }, 15000);
+
+    // แทรก <script> tag เข้าไปใน <body> เพื่อเริ่มการโหลด/ส่งข้อมูล
+    document.body.appendChild(scriptTag);
+  });
+}
+
+/**
+ * ฟังก์ชันตรวจสอบความถูกต้องของข้อมูลในฟอร์ม (validation)
+ * คืนค่าเป็น object ข้อมูล ถ้าผ่านการตรวจสอบทั้งหมด หรือ null ถ้ามีช่องไม่ผ่าน
+ */
+function validateForm() {
+  // เคลียร์สถานะ error เก่าทั้งหมดก่อนตรวจใหม่ทุกครั้ง
+  document.querySelectorAll(".field").forEach(f => f.classList.remove("error"));
+
+  const data = {
+    prefix: document.getElementById("prefix").value,
+    firstName: document.getElementById("firstName").value.trim(),
+    lastName: document.getElementById("lastName").value.trim(),
+    grade: document.getElementById("grade").value,
+    room: document.getElementById("room").value.trim(),
+    number: document.getElementById("number").value.trim(),
+    weight: document.getElementById("weight").value.trim(),
+    height: document.getElementById("height").value.trim()
+  };
+
+  let isValid = true;
+
+  // ตรวจสอบทีละช่องว่ามีข้อมูลหรือไม่ (ช่องว่างทั้งหมดถือว่าจำเป็นต้องกรอก)
+  Object.keys(data).forEach(key => {
+    if (data[key] === "" || data[key] === null) {
+      const fieldEl = document.querySelector('[data-field="' + key + '"]');
+      if (fieldEl) fieldEl.classList.add("error");
+      isValid = false;
+    }
+  });
+
+  // ตรวจสอบเพิ่มเติมว่าน้ำหนัก/ส่วนสูงต้องเป็นตัวเลขที่มากกว่า 0
+  if (data.weight && (isNaN(data.weight) || Number(data.weight) <= 0)) {
+    document.querySelector('[data-field="weight"]').classList.add("error");
+    isValid = false;
+  }
+  if (data.height && (isNaN(data.height) || Number(data.height) <= 0)) {
+    document.querySelector('[data-field="height"]').classList.add("error");
+    isValid = false;
+  }
+
+  return isValid ? data : null;
+}
+
+// ดักจับ event ตอนกดปุ่ม "บันทึกข้อมูล"
+form.addEventListener("submit", async function (e) {
+  e.preventDefault(); // ป้องกันไม่ให้หน้าเว็บ reload ตามปกติของฟอร์ม HTML
+
+  const formData = validateForm();
+
+  // ถ้าข้อมูลไม่ผ่านการตรวจสอบ ให้แจ้งเตือนด้วย SweetAlert แล้วหยุดการทำงาน
+  if (!formData) {
+    Swal.fire({
+      icon: "warning",
+      title: "ข้อมูลไม่ครบถ้วน",
+      text: "กรุณากรอกข้อมูลให้ครบทุกช่องก่อนบันทึก",
+      confirmButtonColor: "#1f3a5f"
+    });
+    return;
+  }
+
+  // ปิดปุ่มชั่วคราวเพื่อป้องกันการกดส่งซ้ำซ้อนระหว่างรอผลลัพธ์
+  submitBtn.disabled = true;
+
+  // แสดง popup "กำลังบันทึก..." พร้อม spinner หมุน และล็อกไม่ให้ปิดเองระหว่างรอ
+  Swal.fire({
+    title: "กำลังบันทึกข้อมูล...",
+    text: "กรุณารอสักครู่",
+    allowOutsideClick: false,
+    allowEscapeKey: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
+  });
+
+  try {
+    // เรียกใช้ JSONP ส่งข้อมูลฟอร์มไปยัง Apps Script
+    const result = await jsonpRequest(SCRIPT_URL, formData);
+
+    if (result && result.status === "success") {
+      // กรณีบันทึกสำเร็จ แสดง popup ติ๊กถูกสีเขียว
+      await Swal.fire({
+        icon: "success",
+        title: "บันทึกสำเร็จ",
+        text: "ข้อมูลของคุณถูกบันทึกลงชีตเรียบร้อยแล้ว",
+        confirmButtonColor: "#1f3a5f"
+      });
+      form.reset(); // ล้างฟอร์มให้พร้อมกรอกคนถัดไป
+    } else {
+      // กรณี Apps Script ตอบกลับมาว่าเกิดข้อผิดพลาดฝั่งเซิร์ฟเวอร์
+      throw new Error(result && result.message ? result.message : "เกิดข้อผิดพลาดไม่ทราบสาเหตุ");
+    }
+  } catch (err) {
+    // กรณีเชื่อมต่อไม่ได้ / timeout / เซิร์ฟเวอร์ error
+    Swal.fire({
+      icon: "error",
+      title: "บันทึกไม่สำเร็จ",
+      text: err.message || "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ กรุณาลองใหม่อีกครั้ง",
+      confirmButtonColor: "#1f3a5f"
+    });
+  } finally {
+    // เปิดปุ่มกลับมาให้กดได้อีกครั้งไม่ว่าผลลัพธ์จะเป็นอย่างไร
+    submitBtn.disabled = false;
+  }
+});
+</script>
+
+</body>
+</html>
